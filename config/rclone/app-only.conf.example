@@ -1,0 +1,12 @@
+# Solo Microsoft 365 Business / SharePoint, autorizado por administrador.
+# Ejemplo opcional: integrar secciones en el config activo con rclone config.
+# Rclone usa tenant (NO tenant_id). No basta client_id/client_secret.
+[onedrive_business_app]
+type = onedrive
+# client_id: configurar RCLONE_CONFIG_ONEDRIVE_BUSINESS_APP_CLIENT_ID en env
+# client_secret: configurar RCLONE_CONFIG_ONEDRIVE_BUSINESS_APP_CLIENT_SECRET en env
+tenant = REEMPLAZAR_DIRECTORY_ID
+client_credentials = true
+drive_id = REEMPLAZAR_DRIVE_ID
+drive_type = business
+# Sin token delegado. Cifrar configuración y rotar secreto antes de vencer.

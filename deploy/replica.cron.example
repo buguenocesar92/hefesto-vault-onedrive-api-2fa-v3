@@ -1,0 +1,7 @@
+# Instalar en /etc/cron.d/storage-replica DESPUÉS de dry-run, sync y check manual.
+# Adaptar /opt/storage-union. Horario en zona del HOST, no contenedor.
+# MAILTO necesita un MTA operativo; configurar monitor de last-success además.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# Cada día 03:15. No habilitado por defecto.
+15 3 * * * root cd /opt/storage-union && ./scripts/replicate.sh --apply

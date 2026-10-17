@@ -1,0 +1,58 @@
+auth.storage.test {
+  tls internal
+  header X-Content-Type-Options nosniff
+  reverse_proxy authelia:9091
+}
+files.storage.test {
+  tls internal
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy no-referrer
+  }
+  route {
+    request_header -Remote-User
+    request_header -Remote-Groups
+    request_header -Remote-Email
+    request_header -Remote-Name
+    forward_auth authelia:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+    reverse_proxy storage-portal:8080
+  }
+}
+
+console.storage.test {
+  tls internal
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy no-referrer
+    Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+  }
+  route {
+    request_header -Remote-User
+    request_header -Remote-Groups
+    request_header -Remote-Email
+    request_header -Remote-Name
+    forward_auth authelia:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+    handle_path /api/* {
+      reverse_proxy storage-api:8081 {
+        header_up Authorization "Bearer {$STORAGE_API_ADMIN_TOKEN}"
+      }
+    }
+    handle {
+      root * /srv/ui
+      file_server
+    }
+  }
+}
+api.storage.test {
+  tls internal
+  header X-Content-Type-Options nosniff
+  reverse_proxy storage-api:8081
+}

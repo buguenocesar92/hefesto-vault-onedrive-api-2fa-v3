@@ -1,0 +1,302 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Hefesto Vault API",
+    "version": "3.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.storage.test"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "summary": "Estado autenticado",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaci\u00f3n completada; cargas aceptadas en VFS, no necesariamente durables en OneDrive"
+          },
+          "401": {
+            "description": "Token inv\u00e1lido"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "503": {
+            "description": "Montaje no disponible"
+          }
+        }
+      }
+    },
+    "/v1/files": {
+      "get": {
+        "summary": "Listar carpeta",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaci\u00f3n completada; cargas aceptadas en VFS, no necesariamente durables en OneDrive"
+          },
+          "401": {
+            "description": "Token inv\u00e1lido"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "503": {
+            "description": "Montaje no disponible"
+          }
+        },
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ruta relativa; ra\u00edz vac\u00eda solo para listado"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 200
+            }
+          }
+        ]
+      }
+    },
+    "/v1/content": {
+      "get": {
+        "summary": "Descargar archivo",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaci\u00f3n completada; cargas aceptadas en VFS, no necesariamente durables en OneDrive"
+          },
+          "401": {
+            "description": "Token inv\u00e1lido"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "503": {
+            "description": "Montaje no disponible"
+          }
+        },
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ruta relativa; ra\u00edz vac\u00eda solo para listado"
+          }
+        ]
+      },
+      "put": {
+        "summary": "Crear o reemplazar archivo",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaci\u00f3n completada; cargas aceptadas en VFS, no necesariamente durables en OneDrive"
+          },
+          "401": {
+            "description": "Token inv\u00e1lido"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "503": {
+            "description": "Montaje no disponible"
+          }
+        },
+        "description": "Requiere token de administraci\u00f3n.",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ruta relativa; ra\u00edz vac\u00eda solo para listado"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/directories": {
+      "post": {
+        "summary": "Crear carpeta",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaci\u00f3n completada; cargas aceptadas en VFS, no necesariamente durables en OneDrive"
+          },
+          "401": {
+            "description": "Token inv\u00e1lido"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "503": {
+            "description": "Montaje no disponible"
+          },
+          "201": {
+            "description": "Carpeta creada"
+          }
+        },
+        "description": "Requiere token de administraci\u00f3n.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/entries": {
+      "patch": {
+        "summary": "Mover o renombrar sin reemplazar destino",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaci\u00f3n completada; cargas aceptadas en VFS, no necesariamente durables en OneDrive"
+          },
+          "401": {
+            "description": "Token inv\u00e1lido"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "503": {
+            "description": "Montaje no disponible"
+          }
+        },
+        "description": "Requiere token de administraci\u00f3n.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "destination"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "destination": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar archivo o carpeta vac\u00eda",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaci\u00f3n completada; cargas aceptadas en VFS, no necesariamente durables en OneDrive"
+          },
+          "401": {
+            "description": "Token inv\u00e1lido"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "503": {
+            "description": "Montaje no disponible"
+          }
+        },
+        "description": "Requiere token de administraci\u00f3n.",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ruta relativa; ra\u00edz vac\u00eda solo para listado"
+          }
+        ]
+      }
+    }
+  }
+}

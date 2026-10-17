@@ -1,0 +1,146 @@
+name: storage-union
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+services:
+  rclone-mount:
+    image: ${RCLONE_IMAGE:-rclone/rclone:latest}
+    restart: unless-stopped
+    cap_add: [SYS_ADMIN]
+    devices: [/dev/fuse:/dev/fuse]
+    security_opt: [apparmor:unconfined]
+    entrypoint: [/bin/sh, /scripts/mount.sh]
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./config/rclone:/config/rclone
+      - ./data/cache:/cache
+      - type: bind
+        source: ./data/mounts
+        target: /data
+        bind:
+          propagation: rshared
+    env_file: [.env.rclone]
+    networks: [egress-rclone]
+    stop_grace_period: 5m
+    healthcheck:
+      test: [CMD-SHELL, 'grep -q " /data/respaldos .* - fuse.rclone " /proc/self/mountinfo && timeout 15 ls /data/respaldos >/dev/null']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    logging: *logging
+
+  storage-portal:
+    build:
+      context: ./portal
+      args:
+        FILEBROWSER_IMAGE: ${FILEBROWSER_IMAGE:-filebrowser/filebrowser:v2.30.0}
+    image: storage-portal-local
+    user: "1000:1000"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=64m,mode=1777]
+    volumes:
+      - ./data/filebrowser:/database
+      - type: bind
+        source: ./data/mounts
+        target: /data
+        bind:
+          propagation: rslave
+    depends_on:
+      rclone-mount:
+        condition: service_healthy
+    networks: [net-storage]
+    logging: *logging
+
+  authelia:
+    image: ${AUTHELIA_IMAGE:-authelia/authelia:4.39}
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=32m,mode=1777]
+    env_file: [.env.authelia]
+    volumes:
+      - ./runtime/authelia:/config:ro
+      - ./config/authelia/users_database.yml:/users/users_database.yml:ro
+      - ./data/authelia:/var/lib/authelia
+    networks: [net-storage, egress-auth]
+    logging: *logging
+
+  storage-api:
+    build: ./api
+    image: storage-api-local
+    user: "1000:1000"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    env_file: [.env.api]
+    environment:
+      PORTAL_ORIGIN: https://${DASHBOARD_HOST:-console.storage.test}
+      API_MAX_UPLOAD_BYTES: ${API_MAX_UPLOAD_BYTES:-2147483648}
+    volumes:
+      - type: bind
+        source: ./data/mounts
+        target: /data
+        bind:
+          propagation: rslave
+    depends_on:
+      rclone-mount:
+        condition: service_healthy
+    networks: [net-storage]
+    logging: *logging
+
+  rclone-replica:
+    image: ${RCLONE_IMAGE:-rclone/rclone:latest}
+    profiles: [backup]
+    entrypoint: [/bin/sh, /scripts/replica-worker.sh]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      RCLONE_CONFIG: /config/rclone.conf
+      RCLONE_PASSWORD_COMMAND: printenv RCLONE_CONFIG_PASS
+      MIRROR_MAX_DELETE: ${MIRROR_MAX_DELETE:-0}
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./config/replica:/config
+    tmpfs: [/tmp:size=64m,mode=1777]
+    env_file: [.env.replica]
+    networks: [egress-backup]
+    logging: *logging
+
+  auth-proxy:
+    env_file: [.env.api]
+    image: ${CADDY_IMAGE:-caddy:2-alpine}
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${HTTP_PORT:-80}:80"
+      - "${BIND_IP:-127.0.0.1}:${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./runtime/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./ui:/srv/ui:ro
+      - ./data/caddy:/data
+      - caddy-config:/config
+    depends_on: [authelia, storage-portal, storage-api]
+    networks: [net-storage, egress-proxy]
+    logging: *logging
+
+networks:
+  net-storage:
+    internal: true
+  egress-backup: {}
+  egress-rclone: {}
+  egress-auth: {}
+  egress-proxy: {}
+volumes:
+  caddy-config: {}

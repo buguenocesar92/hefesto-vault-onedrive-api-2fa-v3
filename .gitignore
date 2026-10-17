@@ -1,0 +1,11 @@
+.env
+secrets/
+runtime/
+data/
+config/rclone/rclone.conf
+config/authelia/users_database.yml
+__pycache__/
+config/replica/rclone.conf
+.env.*
+!.env.example
+!.env.*.example
